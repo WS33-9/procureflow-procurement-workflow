@@ -1,5 +1,7 @@
 # ProcureFlow
 
+# ProcureFlow
+
 A fictional procurement workflow implementation case built with Streamlit and
 DuckDB.
 
@@ -8,7 +10,18 @@ intake, ownership, follow-up, approval confirmation, related references,
 closure, and management reporting without replacing formal ERP, approval,
 contracting, or document systems.
 
-The Streamlit application covers the request lifecycle from intake through assignment, active work, completion, and management reporting. It uses synthetic data and runs locally with DuckDB. Workflow changes are made in a temporary demo copy and may reset when the hosted application restarts. The synthetic baseline remains unchanged.
+The application uses synthetic data and a protected baseline database.
+Interactive changes are written to a disposable demo workspace, so reviewers
+can explore the workflow without altering the starting dataset.
+
+**[Live demo](https://procureflow-procurement-workflow-umtcszaq2wmb3vwu8n2c8g.streamlit.app/)** ·
+**[Demo walkthrough](docs/demo_walkthrough.md)** ·
+**[Architecture](docs/architecture.md)**
+
+![ProcureFlow management dashboard](assets/dashboard.png)
+
+
+
 
 ## The business problem
 
@@ -22,7 +35,7 @@ Procurement teams may already have systems for approvals, financial transactions
 
 The issue is not that every procurement activity happens in a different system. Many of those activities belong there. The gap is the lack of a consistent operational view around the request.
 
-## The approach
+## Solution design
 
 ProcureFlow sits around existing procurement processes as a lightweight workflow layer. Officers maintain ownership, status, dependencies, next actions, dates, approval confirmation, and references in one request record. Managers use that same data for workload and attention reporting.
 
@@ -35,6 +48,18 @@ Several design choices keep the first phase focused:
 - Attention conditions are calculated from current request data rather than maintained in a second tracker.
 - Interactive changes use an isolated local copy so the synthetic baseline stays unchanged.
 
+## Key implementation decisions
+
+- Keep lifecycle status separate from attention conditions.
+- Represent waiting through dependencies and next actions rather than adding a
+  separate status.
+- Record approval confirmation without duplicating formal approval decisions.
+- Store external record identifiers and links rather than official documents.
+- Calculate attention conditions from maintained request data instead of
+  creating a second reporting tracker.
+- Use one shared database for both operational workflow and management
+  reporting.
+  
 ## What users can do
 
 The prototype has two top-level views.
@@ -58,6 +83,18 @@ The prototype has two top-level views.
 - requests requiring attention, with reasons and next actions;
 - filters that use the same maintained request data.
 
+### Standardized intake
+
+![ProcureFlow standardized intake](assets/intake.png)
+
+### Operational request list
+
+![ProcureFlow request list](assets/request_list.png)
+
+### Request detail and workflow history
+
+![ProcureFlow request detail](assets/request_detail.png)
+
 ## Architecture and stack
 
 ```text
@@ -73,7 +110,7 @@ DuckDB: users, requests, references, history
 ```
 
 - **Python and Streamlit** for the application.
-- **DuckDB** for the four-table local data layer.
+- **DuckDB** for a portable DuckDB for a portable four-table relational data model covering users, requests, references, and history.
 - **Altair** for restrained management charts.
 - **`src/database.py`** for shared writes, validation, numbering, timestamps, and history.
 - **`src/rules.py`** for explainable, non-persisted attention conditions.
@@ -135,8 +172,8 @@ ProcureFlow does not replace formal approval channels, ERP or financial systems,
 - [Discovery plan](docs/02_discovery_plan.md)
 - [Current and future state](docs/03_current_and_future_state.md)
 - [Scope and requirements](docs/04_scope_and_requirements.md)
-- [Officer workflow architecture](working_source/officer_workflow_architecture.md)
-- [UAT plan](working_source/uat_plan.md)
-- [Training plan](working_source/training_plan.md)
-- [Go-live readiness plan](working_source/go_live_readiness_plan.md)
-- [Proposed field dictionary](working_source/proposed_field_dictionary.md)
+- [Officer workflow architecture](docs/architecture.md)
+- [UAT plan](docs/uat_plan.md)
+- [Training plan](docs/training_plan.md)
+- [Go-live readiness plan](docs/go_live_readiness_plan.md)
+- [Proposed field dictionary](docs/proposed_field_dictionary.md)
