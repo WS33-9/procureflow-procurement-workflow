@@ -1,0 +1,26 @@
+canonical_doc4:
+  path: docs/04_scope_and_requirements.md
+  sha256: afa8222ee6b99eb6a6d77d294d1a42bca01344e9a06558838daad72e85942a01
+
+source_precedence:
+  - doc4
+  - docs_1_to_3
+  - approved_implementation
+  - ui_design_system
+  - new_decisions_when_silent
+
+rules:
+  - no_silent_scope_additions
+  - no_silent_requirement_removal
+  - no_lower_priority_source_overrides_higher_priority_source
+  - discovery_assumptions_remain_provisional
+  - deviations_logged_before_implementation
+  - existing_code_does_not_override_doc4
+  - no_claim_of_real_client_validation
+
+artifacts:
+  source_register: working_source/governance/source_register.md
+  traceability_matrix: working_source/governance/doc4_traceability_matrix.md
+  gap_assessment: working_source/governance/current_implementation_gap_assessment.md
+  implementation_plan: working_source/governance/doc4_implementation_plan.md
+  deviation_register: working_source/governance/deviation_register.md

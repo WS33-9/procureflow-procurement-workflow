@@ -1,0 +1,16 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.env.*
+.streamlit/secrets.toml
+database/demo_sessions/
+database/procureflow.duckdb
+*.duckdb.wal
+working_source/
+private_interview/
+.pytest_cache/
+.coverage
+htmlcov/
