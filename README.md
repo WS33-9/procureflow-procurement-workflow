@@ -111,7 +111,7 @@ streamlit run app.py
 
 ## Suggested walkthrough
 
-Use the [officer workflow walkthrough](working_source/officer_demo_walkthrough.md) for a complete scenario. It begins with a new fictional request, follows it through assignment and active work, records approval and an external reference, tests completion validation, reviews history, checks the Dashboard, and resets the workspace.
+Use the [officer workflow walkthrough](docs/demo_walkthrough.md) for a complete scenario. It begins with a new fictional request, follows it through assignment and active work, records approval and an external reference, tests completion validation, reviews history, checks the Dashboard, and resets the workspace.
 
 ## Run the tests
 
