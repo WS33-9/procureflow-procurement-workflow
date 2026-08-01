@@ -1,179 +1,351 @@
 # ProcureFlow
 
-# ProcureFlow
+ProcureFlow is a fictional procurement SaaS implementation case covering
+discovery, process design, scope, data and integration considerations, security
+and access requirements, UAT, training, and go-live readiness.
 
-A fictional procurement workflow implementation case built with Streamlit and
-DuckDB.
+The case is based on a common operational challenge: procurement teams may use
+different systems for approvals, financial transactions, contracts, and
+official records, while still relying on email, spreadsheets, and individual
+follow-up to manage the work between them.
 
-ProcureFlow demonstrates how a shared operational layer can connect request
-intake, ownership, follow-up, approval confirmation, related references,
-closure, and management reporting without replacing formal ERP, approval,
-contracting, or document systems.
+ProcureFlow brings those operational steps into one shared workflow, from
+request intake and assignment through follow-up, approval confirmation,
+closure, and management reporting.
 
-The application uses synthetic data and a protected baseline database.
-Interactive changes are written to a disposable demo workspace, so reviewers
-can explore the workflow without altering the starting dataset.
+The project combines a working prototype with supporting implementation
+materials covering discovery, current- and future-state processes,
+requirements, data, integrations, UAT, training, and go-live planning.
 
-**[Live demo](https://procureflow-procurement-workflow-umtcszaq2wmb3vwu8n2c8g.streamlit.app/)** ·
-**[Demo walkthrough](docs/demo_walkthrough.md)** ·
-**[Architecture](docs/architecture.md)**
+**[Open the live demo](https://procureflow-procurement-workflow-umtcszaq2wmb3vwu8n2c8g.streamlit.app/)** ·
+**[View the demo walkthrough](docs/demo_walkthrough.md)** ·
+**[Review the solution architecture](docs/architecture.md)**
 
 ![ProcureFlow management dashboard](assets/dashboard.png)
 
+## Business problem
 
+Procurement work often moves across several teams and systems.
 
+A request may begin through email or a form. Approval may take place through a
+finance process. Purchase orders and financial transactions may be managed in
+an ERP. Contracts and official documents may be stored in a separate
+repository.
 
-## The business problem
+Each system may serve a valid purpose, but the day-to-day work between them can
+still be difficult to manage.
 
-Procurement teams may already have systems for approvals, financial transactions, contracts, and official records, yet still coordinate day-to-day work through email, spreadsheets, forms, and personal notes. That makes basic questions harder to answer:
+Teams may not have one consistent way to answer:
 
-- Who owns each request?
-- What is outstanding, and who needs to act next?
-- Which follow-ups and target dates have been missed?
+- Who currently owns the request?
+- What is preventing it from moving forward?
+- Who needs to respond next?
+- When should the procurement officer follow up?
+- Which target dates have been missed?
 - How is work distributed across the team?
 - Is management reporting based on current information?
 
-The issue is not that every procurement activity happens in a different system. Many of those activities belong there. The gap is the lack of a consistent operational view around the request.
+The issue is not simply that information exists in different systems. The gap
+is the lack of one operational view around the request.
+
+## Implementation approach
+
+The first step was to clarify where the operational gap existed and which
+activities should remain in existing systems.
+
+The proposed workflow follows a clear handoff:
+
+1. A requestor or authorized user submits the request.
+2. The request enters the workflow as **Submitted** and **Unassigned**.
+3. An authorized procurement user assigns one procurement officer.
+4. The assigned officer reviews the request and begins the work.
+5. The officer maintains dependencies, next actions, dates, approval
+   confirmation, related references, and closure information.
+6. Managers use the same request data to review workload and identify work that
+   requires attention.
+
+Because this is a fictional case, the fields, roles, thresholds, and workflow
+rules are working assumptions rather than requirements validated with a real
+client.
+
+In a client implementation, they would be confirmed through discovery
+sessions, process walkthroughs, configuration discussions, and UAT.
 
 ## Solution design
 
-ProcureFlow sits around existing procurement processes as a lightweight workflow layer. Officers maintain ownership, status, dependencies, next actions, dates, approval confirmation, and references in one request record. Managers use that same data for workload and attention reporting.
+ProcureFlow acts as a lightweight workflow layer around the existing
+procurement process.
 
-Several design choices keep the first phase focused:
+It brings together:
 
-- Five lifecycle statuses: Submitted, Assigned, In Progress, Completed, and Cancelled.
-- Waiting stays In Progress; the dependency, owner, next action, and follow-up date explain what is holding up the work.
-- Approval decisions remain in their existing process. ProcureFlow records confirmation and a reference only.
-- Purchase orders, contracts, amendments, and official documents remain in their source systems. ProcureFlow stores identifiers and links.
-- Attention conditions are calculated from current request data rather than maintained in a second tracker.
-- Interactive changes use an isolated local copy so the synthetic baseline stays unchanged.
+- standardized request intake;
+- ownership and assignment;
+- lifecycle status;
+- current dependencies;
+- next actions;
+- follow-up and target dates;
+- approval confirmation;
+- related-system references;
+- closure information;
+- request history;
+- management reporting.
 
-## Key implementation decisions
+The prototype has two main areas:
 
-- Keep lifecycle status separate from attention conditions.
-- Represent waiting through dependencies and next actions rather than adding a
-  separate status.
-- Record approval confirmation without duplicating formal approval decisions.
-- Store external record identifiers and links rather than official documents.
-- Calculate attention conditions from maintained request data instead of
-  creating a second reporting tracker.
-- Use one shared database for both operational workflow and management
-  reporting.
-  
-## What users can do
+- **Requests**, where users submit and progress procurement work;
+- **Dashboard**, where managers review workload, overdue actions, and requests
+  requiring attention.
 
-The prototype has two top-level views.
+Both views use the same maintained request data, so there is no separate
+reporting tracker to update.
 
-**Requests** supports the operational workflow:
+## Key design decisions
 
-1. Create a request through standardized intake.
-2. Validate required information and create a Submitted, Unassigned record.
-3. Assign one procurement officer and start work.
-4. Maintain the current dependency, next action, follow-up date, target date, route, and officer note.
-5. Record approval confirmation from an external process.
-6. Add related record references and links.
-7. Complete or cancel the request with closure validation.
-8. Review a chronological history of important changes.
+### Request intake and procurement ownership are separate
 
-**Dashboard** supports management review:
+A requestor or authorized user submits the request first.
 
-- open, unassigned, overdue, and high-priority work;
-- lifecycle and request-category distribution;
-- workload by owner, including Unassigned;
-- requests requiring attention, with reasons and next actions;
-- filters that use the same maintained request data.
+The request is created as **Submitted** and **Unassigned**. An authorized
+procurement user then reviews it and assigns one officer.
+
+This keeps request intake separate from procurement ownership and makes the
+handoff clear.
+
+### Waiting is not a separate lifecycle stage
+
+ProcureFlow uses five lifecycle statuses:
+
+- Submitted
+- Assigned
+- In Progress
+- Completed
+- Cancelled
+
+A request that is waiting for information remains **In Progress**.
+
+The dependency, dependency owner, next action, and follow-up date explain what
+is holding it up and what should happen next.
+
+This keeps two different concepts separate:
+
+- lifecycle status shows where the request is in the process;
+- attention conditions show whether action is currently needed.
+
+### Formal approval remains outside ProcureFlow
+
+ProcureFlow records whether approval is required and whether confirmation has
+been received.
+
+It can also record:
+
+- the approval source;
+- the approval reference;
+- the confirmation date;
+- a supporting note.
+
+It does not grant the approval.
+
+The formal decision remains in the process or system responsible for it.
+
+### Official records remain in their source systems
+
+Purchase orders, contracts, amendments, approval records, and official
+documents are not recreated in ProcureFlow.
+
+The request stores the relevant identifier, source, and link. This gives users
+the context they need without introducing another unofficial repository.
+
+### Attention is calculated from the operational record
+
+Users do not manually maintain a separate attention tracker.
+
+ProcureFlow identifies conditions such as:
+
+- assignment overdue;
+- follow-up overdue;
+- target date missed;
+- required information outstanding;
+- approval not confirmed;
+- no recent update;
+- closure evidence missing.
+
+These conditions are calculated from the same information used to manage the
+request.
+
+### The original demo data remains protected
+
+The application starts with a fixed synthetic dataset.
+
+When a reviewer creates or updates a request, the application uses a temporary
+writable copy. This makes the workflow interactive while preserving the
+starting dataset.
+
+## User workflow
+
+### Requestor or authorized user
+
+Submits the required information through standardized intake.
+
+The request is created as **Submitted** and **Unassigned**.
+
+### Authorized procurement user
+
+Reviews the submitted request and assigns one procurement officer.
+
+The assignment actor and date are recorded.
+
+### Assigned procurement officer
+
+Progresses the request by maintaining:
+
+- current dependencies;
+- dependency ownership;
+- next actions;
+- follow-up dates;
+- target dates;
+- procurement route;
+- approval confirmation;
+- related references;
+- closure information;
+- request history.
+
+The roles in this prototype are simulated for workflow demonstration and
+attribution. They are not production authentication or access control.
+
+## Management visibility
+
+The Dashboard helps managers move from general reporting to specific work that
+may need attention.
+
+It shows:
+
+- open requests;
+- unassigned requests;
+- overdue follow-ups;
+- missed target dates;
+- high-priority requests;
+- workload by owner;
+- lifecycle and category distribution;
+- requests requiring attention;
+- the reason attention is required;
+- the next action recorded on the request.
+
+The Dashboard and Requests views use the same maintained request data. There is
+no separate reporting update in the prototype.
+
+## Prototype walkthrough
 
 ### Standardized intake
 
+A requestor or authorized user submits the minimum information needed to begin
+the workflow.
+
+The request is created as **Submitted** and **Unassigned**.
+
 ![ProcureFlow standardized intake](assets/intake.png)
 
-### Operational request list
+### Procurement workspace
 
-![ProcureFlow request list](assets/request_list.png)
+Procurement users can review submitted requests, assign ownership, and identify
+work that needs attention.
 
-### Request detail and workflow history
+![ProcureFlow procurement workspace](assets/request_list.png)
+
+### Request detail and history
+
+The Request Detail view supports assignment, active work, dependencies,
+approval confirmation, related references, closure, and chronological history.
 
 ![ProcureFlow request detail](assets/request_detail.png)
 
-## Architecture and stack
+The [demo walkthrough](docs/demo_walkthrough.md) follows one fictional request
+from submission through completion.
+
+## What would be confirmed with a client
+
+The prototype provides a starting point for discussion, not a final client
+configuration.
+
+Before implementation, the following areas would need to be confirmed.
+
+### Process and roles
+
+- Who can submit a request?
+- Can users submit on behalf of someone else?
+- Who reviews and assigns new requests?
+- When does responsibility transfer to the procurement officer?
+- Do the proposed lifecycle statuses reflect the actual process?
+- What is required before a request can be completed or cancelled?
+
+### Data
+
+- Which intake fields are mandatory?
+- Which values should use controlled lists?
+- Which system owns each data element?
+- Which identifiers need to be exchanged between systems?
+- What should happen when source information is incomplete?
+- Which changes need to remain visible in history?
+
+### Reporting
+
+- Which measures support actual management decisions?
+- How should overdue work be defined?
+- Which conditions require escalation?
+- How should workload be grouped and filtered?
+- How current does reporting need to be?
+
+### Integrations
+
+- Which systems need to exchange data with the solution?
+- What data needs to move in each direction?
+- Which APIs or other integration methods are available?
+- How will records be matched?
+- How should failed or incomplete integrations be handled?
+- Who will monitor and support the integrations?
+
+### Security and access
+
+- Which roles should be able to view, submit, assign, update, or close a
+  request?
+- Which information is sensitive?
+- What audit and retention requirements apply?
+- How should access be granted, reviewed, and removed?
+- Which controls are required before production use?
+
+### Adoption and readiness
+
+- Which user groups need training?
+- Which scenarios should be included in UAT?
+- What data and configuration must be ready before go-live?
+- Who approves readiness?
+- What support is required after launch?
+- How will implementation success be measured?
+
+Those decisions would guide the final configuration, integrations, testing,
+training, and rollout plan.
+
+## Architecture
 
 ```text
-Streamlit UI
-  ├── Requests: intake, list, detail, workflow actions
-  └── Dashboard: management reporting
-          ↓
-Query and attention-rule layer
-          ↓
+Streamlit user interface
+  ├── Requests
+  │     ├── Standardized intake
+  │     ├── Procurement workspace
+  │     ├── Request detail
+  │     └── Workflow actions and history
+  │
+  └── Dashboard
+        ├── Operational indicators
+        ├── Workload reporting
+        ├── Lifecycle and category reporting
+        └── Attention reporting
+                 ↓
+Shared query and business-rule layer
+                 ↓
 Shared database services and validation
-          ↓
-DuckDB: users, requests, references, history
-```
-
-- **Python and Streamlit** for the application.
-- **DuckDB** for a portable DuckDB for a portable four-table relational data model covering users, requests, references, and history.
-- **Altair** for restrained management charts.
-- **`src/database.py`** for shared writes, validation, numbering, timestamps, and history.
-- **`src/rules.py`** for explainable, non-persisted attention conditions.
-- **`src/queries.py`** for shared operational and reporting queries.
-- **`src/config.py`** for prototype controlled values and thresholds.
-- **`src/data_generator.py`** for deterministic fictional demo data.
-
-## Run locally
-
-From the repository root:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app.py
-```
-
-Open `http://127.0.0.1:8501` if the browser does not open automatically.
-
-The application starts against `database/procureflow_demo.duckdb`. The fixed reporting date for the portfolio scenario is July 30, 2026.
-
-## Use the demo workspace
-
-The baseline opens in preview mode. On **Requests**, select **Create local demo workspace** before submitting or updating a request. ProcureFlow copies the baseline into `database/demo_sessions/` and directs all workflow writes to that session copy.
-
-Use **Reset local demo workspace** to restore the starting data. The baseline database is not rewritten during the walkthrough.
-
-For an isolated database supplied outside the interface, set:
-
-```bash
-export PROCUREFLOW_DATABASE_PATH=/absolute/path/to/session.duckdb
-streamlit run app.py
-```
-
-## Suggested walkthrough
-
-Use the [officer workflow walkthrough](docs/demo_walkthrough.md) for a complete scenario. It begins with a new fictional request, follows it through assignment and active work, records approval and an external reference, tests completion validation, reviews history, checks the Dashboard, and resets the workspace.
-
-## Run the tests
-
-With the virtual environment active:
-
-```bash
-python -m unittest discover -s tests -p "test_*.py"
-```
-
-The suite covers the four-table schema, controlled values, validation, lifecycle transitions, attention rules, deterministic data, shared queries, Dashboard behavior, intake, officer workflow, workspace reset, and baseline integrity.
-
-## System boundary and limitations
-
-This is a portfolio prototype using fictional people, organizations, requests, values, and references. It is not a production procurement platform and has not been validated or accepted by a real client.
-
-ProcureFlow does not replace formal approval channels, ERP or financial systems, sourcing and contracting processes, supplier communication, or official document repositories. It has no live integrations or production authentication. Roles are simulated for workflow and attribution; they are not access control. Controlled values are centralized in code, but code-free administrator maintenance is not implemented. Fields, roles, values, thresholds, and closure rules remain assumptions to confirm during discovery. Client UAT, training delivery, go-live execution, hosting, monitoring, backup, and recovery are outside this local prototype.
-
-## Project documents
-
-- [Project brief](docs/01_project_brief.md)
-- [Discovery plan](docs/02_discovery_plan.md)
-- [Current and future state](docs/03_current_and_future_state.md)
-- [Scope and requirements](docs/04_scope_and_requirements.md)
-- [Officer workflow architecture](docs/architecture.md)
-- [UAT plan](docs/uat_plan.md)
-- [Training plan](docs/training_plan.md)
-- [Go-live readiness plan](docs/go_live_readiness_plan.md)
-- [Proposed field dictionary](docs/proposed_field_dictionary.md)
+                 ↓
+DuckDB relational data model
+  ├── Users
+  ├── Requests
+  ├── Related references
+  └── Request history
