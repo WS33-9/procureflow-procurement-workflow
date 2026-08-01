@@ -74,7 +74,7 @@ class OfficerWorkflowTest(unittest.TestCase):
         return next(element for element in elements if element.key == key)
 
     def open_intake(self, app: AppTest) -> AppTest:
-        next(button for button in app.button if button.label == "New request").click().run()
+        next(button for button in app.button if button.label == "Submit request").click().run()
         return app
 
     def fill_valid_intake(
@@ -136,7 +136,7 @@ class OfficerWorkflowTest(unittest.TestCase):
         self.assertEqual(list(app.exception), [])
         markdown = "\n".join(item.value for item in app.markdown)
         self.assertIn("Procurement requests", markdown)
-        self.assertIn("Request list", markdown)
+        self.assertIn("Procurement workspace", markdown)
         self.assertIn("Showing 1–12 of 36 requests", markdown)
         self.assertIn("Unassigned", markdown)
         self.assertNotIn("assignment_overdue", markdown)
@@ -154,7 +154,7 @@ class OfficerWorkflowTest(unittest.TestCase):
         try:
             app = AppTest.from_file(str(REQUESTS_PAGE), default_timeout=30).run()
             self.assertEqual(list(app.exception), [])
-            self.assertTrue(any(button.label == "New request" for button in app.button))
+            self.assertTrue(any(button.label == "Submit request" for button in app.button))
             self.open_intake(app)
             self.assertEqual(list(app.exception), [])
             labels = {
@@ -171,7 +171,7 @@ class OfficerWorkflowTest(unittest.TestCase):
             }
             self.assertTrue(
                 {
-                    "Created by / demo submitter *",
+                    "Submitted by / authorized requestor *",
                     "Request title *",
                     "Requestor name *",
                     "Business unit *",
@@ -184,7 +184,7 @@ class OfficerWorkflowTest(unittest.TestCase):
                 }.issubset(labels)
             )
             create_button = next(
-                button for button in app.button if button.label == "Create request"
+                button for button in app.button if button.label == "Submit request"
             )
             self.assertTrue(create_button.disabled)
             self.assertTrue(
@@ -213,10 +213,10 @@ class OfficerWorkflowTest(unittest.TestCase):
 
         app = self.open_intake(self.run_requests_page())
         self.fill_valid_intake(app)
-        next(button for button in app.button if button.label == "Create request").click().run()
+        next(button for button in app.button if button.label == "Submit request").click().run()
         self.assertEqual(list(app.exception), [])
         self.assertEqual(list(app.error), [])
-        self.assertIn("PF-0049 created as Submitted.", [item.value for item in app.success])
+        self.assertIn("PF-0049 submitted successfully and awaiting assignment.", [item.value for item in app.success])
         markdown = "\n".join(item.value for item in app.markdown)
         self.assertIn("Request detail", markdown)
         self.assertIn("PF-0049 · Accessibility review services", markdown)
@@ -273,7 +273,7 @@ class OfficerWorkflowTest(unittest.TestCase):
             ).fetchone()[0]
         finally:
             connection.close()
-        next(button for button in app.button if button.label == "Create request").click().run()
+        next(button for button in app.button if button.label == "Submit request").click().run()
         self.assertEqual(list(app.exception), [])
         self.assertIn("request_title is required.", [item.value for item in app.error])
         connection = self.connection()
@@ -286,7 +286,7 @@ class OfficerWorkflowTest(unittest.TestCase):
             connection.close()
 
         self.fill_valid_intake(app, estimated_value=-1.0)
-        next(button for button in app.button if button.label == "Create request").click().run()
+        next(button for button in app.button if button.label == "Submit request").click().run()
         self.assertEqual(list(app.exception), [])
         self.assertIn("estimated_value cannot be negative.", [item.value for item in app.error])
         connection = self.connection()
@@ -303,13 +303,13 @@ class OfficerWorkflowTest(unittest.TestCase):
 
         next(button for button in app.button if button.label == "Cancel").click().run()
         self.assertEqual(list(app.exception), [])
-        self.assertIn("Request list", "\n".join(item.value for item in app.markdown))
+        self.assertIn("Procurement workspace", "\n".join(item.value for item in app.markdown))
 
     def test_intake_accepts_past_required_by_date(self):
         app = self.open_intake(self.run_requests_page())
         past_date = date(2026, 7, 1)
         self.fill_valid_intake(app, required_by_date=past_date, estimated_value=None)
-        next(button for button in app.button if button.label == "Create request").click().run()
+        next(button for button in app.button if button.label == "Submit request").click().run()
         self.assertEqual(list(app.exception), [])
         self.assertEqual(list(app.error), [])
         connection = self.connection()
@@ -400,7 +400,7 @@ class OfficerWorkflowTest(unittest.TestCase):
             "Related references",
             "Closure",
             "Request history",
-            "Workflow actions",
+            "Procurement workflow actions",
         ):
             self.assertIn(section, markdown)
         self.assertIn("does not make the approval decision", "\n".join(x.value for x in app.caption))

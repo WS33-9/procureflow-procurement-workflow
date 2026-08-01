@@ -1,4 +1,4 @@
-"""ProcureFlow officer Request List and routed Request Detail experience."""
+"""ProcureFlow requestor intake and procurement workflow experience."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from datetime import date, datetime, time
 from html import escape
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import streamlit as st
 
@@ -102,12 +103,12 @@ def _render_header() -> None:
     st.markdown(
         """
         <section class="pf-header pf-header--requests">
-          <div class="pf-eyebrow">Officer workflow demonstration</div>
+          <div class="pf-eyebrow">Request intake and procurement workflow</div>
           <div class="pf-header__body">
             <h1>Procurement requests</h1>
             <p>
-              Locate current work, understand what requires follow-up, and
-              maintain the shared request record used for management reporting.
+               Submit a procurement request, review ownership and current work,
+  and maintain the shared record used for management reporting.
             </p>
           </div>
           <div class="pf-context-labels" aria-label="Prototype context">
@@ -374,17 +375,18 @@ def _render_request_list(
         st.success(st.session_state.pop("requests_workspace_message"))
 
     heading, action = st.columns([5, 1])
-    heading.markdown("## Request list")
+    heading.markdown("## Procurement workspace")
     action.button(
-        "New request",
+        "Submit request",
         type="primary",
         width="stretch",
         key="requests_new_request",
         on_click=_open_intake,
     )
     st.caption(
-        "Attention conditions are derived from maintained request data. "
-        "Open a request to review its current state and traceable history."
+        "Authorized procurement users can review submitted requests, assign ownership, "
+"and maintain the operational record. Attention conditions are derived from "
+"the same request data."
     )
     if not records:
         st.info(
@@ -454,11 +456,15 @@ def _render_intake(
         key="requests_cancel_intake_top",
         on_click=_close_intake,
     )
-    st.markdown('<div class="pf-detail-eyebrow">Standardized intake</div>', unsafe_allow_html=True)
-    st.markdown("## New procurement request")
+    st.markdown(
+        '<div class="pf-detail-eyebrow">Requestor experience</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown("## Submit a procurement request")
     st.caption(
-        "Fields and controlled values are prototype assumptions pending discovery confirmation. "
-        "The demo submitter records attribution and traceability; it is not authentication."
+        "A requestor or authorized user submits the request. It enters the workflow "
+        "as Submitted and Unassigned until an authorized procurement user assigns "
+        "one procurement officer. This is a simulated role experience, not production authentication."
     )
     if not writable:
         st.info(
@@ -473,7 +479,7 @@ def _render_intake(
     with st.form("requests_intake_form", border=True):
         st.markdown("Required fields are marked with *.")
         created_by_user_id = st.selectbox(
-            "Created by / demo submitter *",
+            "Submitted by / authorized requestor *",
             list(user_labels),
             format_func=lambda user_id: user_labels[user_id],
             key="requests_intake_submitter",
@@ -532,7 +538,7 @@ def _render_intake(
         )
         create_column, cancel_column = st.columns([1, 1])
         submitted = create_column.form_submit_button(
-            "Create request",
+            "Submit request",
             type="primary",
             width="stretch",
             disabled=not writable,
@@ -569,7 +575,7 @@ def _render_intake(
     st.session_state.pop(INTAKE_STATE_KEY, None)
     st.session_state[SELECTED_REQUEST_KEY] = str(created["request_id"])
     st.session_state["requests_action_message"] = (
-        f'{created["request_number"]} created as Submitted.'
+        f'{created["request_number"]} submitted successfully and awaiting assignment.'
     )
     st.rerun()
 
@@ -751,7 +757,16 @@ def _render_references(detail: dict[str, Any]) -> None:
             with columns[3]:
                 _field("Closure evidence", reference["is_closure_evidence"])
             if reference["reference_link"]:
-                st.link_button("Open external reference", reference["reference_link"])
+                reference_url = reference["reference_link"]
+                hostname = urlparse(reference_url).hostname or ""
+
+                if hostname.endswith(".example") or hostname.endswith(".invalid"):
+                    st.caption(
+                        f"Fictional demo reference: {reference_url} "
+                        "This reserved domain is intentionally non-functional."
+                    )
+                else:
+                    st.link_button("Open external reference", reference_url)
             if reference["note"]:
                 st.caption(reference["note"])
 
@@ -1235,7 +1250,7 @@ def _render_workflow_actions(
     users: list[dict[str, Any]],
     writable: bool,
 ) -> None:
-    st.markdown("## Workflow actions")
+    st.markdown("## Procurement workflow actions")
     if not writable:
         st.info("Create a local demo workspace to enable controlled workflow actions.")
         return
@@ -1249,6 +1264,10 @@ def _render_workflow_actions(
         current_owner_user_id=request.get("procurement_owner_user_id"),
     )
     if request["lifecycle_status"] == "Submitted":
+        st.caption(
+            "An authorized procurement user assigns the submitted request "
+            "to one procurement officer."
+        )
         _render_assign_action(connection, request, users)
     if request["lifecycle_status"] == "Assigned":
         _render_start_work_action(connection, request, actor_id)
@@ -1285,6 +1304,12 @@ def _render_request_detail(
     message = st.session_state.pop("requests_action_message", None)
     if message:
         st.success(message)
+
+    if request["lifecycle_status"] == "Submitted":
+        st.info(
+            "Requestor step complete. This request is now awaiting assignment "
+            "by an authorized procurement user."
+        )
     _render_attention_summary(detail)
     _render_overview(request)
     _render_ownership(request)
